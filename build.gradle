@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+}
+
+group 'com.basdxz'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok:1.18.22'
+    annotationProcessor 'org.projectlombok:lombok:1.18.22'
+
+    implementation 'org.apache.pdfbox:pdfbox:3.0.0-RC1'
+   // implementation 'org.apache.pdfbox:fontbox:3.0.0-alpha2'
+}

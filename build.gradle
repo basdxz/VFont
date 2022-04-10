@@ -15,4 +15,6 @@ dependencies {
 
     implementation 'org.apache.pdfbox:pdfbox:3.0.0-RC1'
    // implementation 'org.apache.pdfbox:fontbox:3.0.0-alpha2'
+    implementation 'org.joml:joml:1.10.4'
+
 }

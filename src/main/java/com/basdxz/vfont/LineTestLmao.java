@@ -1,6 +1,9 @@
 package com.basdxz.vfont;
 
 import lombok.*;
+import org.joml.Matrix2f;
+import org.joml.Vector2f;
+import org.joml.Vector2fc;
 
 import javax.swing.*;
 import java.awt.*;
@@ -8,7 +11,8 @@ import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 
 /*
-    -200 to 200 canvas
+    Generate translation mat based on iterations
+
  */
 public class LineTestLmao extends JFrame {
     protected final static int FRAME_SIZE = 400;
@@ -24,12 +28,6 @@ public class LineTestLmao extends JFrame {
 
     public static void main(String[] args) {
         new LineTestLmao();
-
-        //val axis = getAxisIntersections(0.5F, 0.75F, 1);
-
-        //for (float axi : axis) {
-        //    System.out.println(axi);
-        //}
     }
 
     @Override
@@ -38,11 +36,22 @@ public class LineTestLmao extends JFrame {
         val g = prepareGraphics(gIn);
         drawAxisLines(g);
 
-        val p0 = new Point2D.Float(-100, -100);    // Curve start
-        val p1 = new Point2D.Float(0, 200);    // Curve control point
-        val p2 = new Point2D.Float(100, -100);   // Curve end
+        val p0 = new Point2D.Float(-100, -100); // Curve start
+        val p1 = new Point2D.Float(0, 200);     // Curve control point
+        val p2 = new Point2D.Float(100, -100);  // Curve end
+        g.setColor(Color.RED);
         drawQuadBezier(g, p0, p1, p2);
         drawQuadBezierIntersections(g, p0, p1, p2);
+
+        val rotMat = new Matrix2f().rotation((float) Math.toRadians(45D));
+
+        val v0 = new Vector2f(p0.x, p0.y).mul(rotMat);
+        val v1 = new Vector2f(p1.x, p1.y).mul(rotMat);
+        val v2 = new Vector2f(p2.x, p2.y).mul(rotMat);
+
+        g.setColor(Color.GREEN);
+        drawQuadBezier(g, v0, v1, v2);
+        drawQuadBezierIntersections(g, v0, v1, v2);
 
         g.dispose();
     }
@@ -68,11 +77,24 @@ public class LineTestLmao extends JFrame {
         g.drawLine((int) p0.getX(), (int) p0.getY(), (int) p1.getX(), (int) p1.getY());
     }
 
+    public static void drawQuadBezier(Graphics2D g, Vector2f v0, Vector2f v1, Vector2f v2) {
+        val curve = new Path2D.Float();
+        curve.moveTo(v0.x(), v0.y());
+        curve.quadTo(v1.x(), v1.y(), v2.x(), v2.y());
+        g.draw(curve);
+    }
+
     public static void drawQuadBezier(Graphics2D g, Point2D p0, Point2D p1, Point2D p2) {
         val curve = new Path2D.Float();
         curve.moveTo(p0.getX(), p0.getY());
         curve.quadTo(p1.getX(), p1.getY(), p2.getX(), p2.getY());
         g.draw(curve);
+    }
+    public static void drawQuadBezierIntersections(Graphics2D g, Vector2fc p0, Vector2fc p1, Vector2fc p2) {
+        drawQuadBezierIntersections(g,
+                new Point2D.Float(p0.x(), p0.y()),
+                new Point2D.Float(p1.x(), p1.y()),
+                new Point2D.Float(p2.x(), p2.y()));
     }
 
     public static void drawQuadBezierIntersections(Graphics2D g, Point2D p0, Point2D p1, Point2D p2) {

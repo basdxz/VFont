@@ -13,8 +13,10 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.22'
     annotationProcessor 'org.projectlombok:lombok:1.18.22'
 
-    implementation 'org.apache.pdfbox:pdfbox:3.0.0-RC1'
-   // implementation 'org.apache.pdfbox:fontbox:3.0.0-alpha2'
+    //implementation 'org.apache.pdfbox:pdfbox:3.0.0-RC1'
+
+    implementation 'org.apache.xmlgraphics:fop:2.7'
+    // implementation 'org.apache.pdfbox:fontbox:3.0.0-alpha2'
     implementation 'org.joml:joml:1.10.4'
 
 }

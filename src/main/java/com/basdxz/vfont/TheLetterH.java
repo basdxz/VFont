@@ -46,7 +46,7 @@ public class TheLetterH extends JFrame {
         val parser = new TTFParser();
         val font = parser.parse("helvetica.ttf");
 
-        val theActualLetterH = font.getPath("A");
+        val theActualLetterH = font.getPath("M");
         g.draw(theActualLetterH);
 
         g.setColor(Color.BLUE);

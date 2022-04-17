@@ -10,8 +10,10 @@ import java.awt.*;
 public abstract class BaseCanvasFrame extends JFrame {
     protected static final int FRAME_SIZE = 500;
     protected static final boolean CENTERED = true;
-    protected static final float SCALE = 0.1F;
-    protected static final boolean FLIPPED_Y = true;
+    //protected static final float SCALE = 0.1F;
+    protected static final float SCALE = 1F;
+//    protected static final boolean FLIPPED_Y = true;
+    protected static final boolean FLIPPED_Y = false;
     protected static final int POINT_THICKNESS = 50;
 
     protected Graphics2D g;
@@ -22,10 +24,7 @@ public abstract class BaseCanvasFrame extends JFrame {
         setResizable(false);
         setVisible(true);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        init();
     }
-
-    protected abstract void init();
 
     @Override
     public void paint(Graphics gIn) {

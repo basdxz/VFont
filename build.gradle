@@ -7,7 +7,10 @@ version '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
+    maven { url "https://jitpack.io" }
 }
+
+compileJava.options.encoding = 'UTF-8'
 
 dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.22'
@@ -18,5 +21,9 @@ dependencies {
     implementation 'org.apache.xmlgraphics:fop:2.7'
     // implementation 'org.apache.pdfbox:fontbox:3.0.0-alpha2'
     implementation 'org.joml:joml:1.10.4'
+
+    implementation 'com.github.dcsch:typecast:master'
+
+    implementation 'net.mabboud.fontverter:FontVerter:1.2.22'
 
 }

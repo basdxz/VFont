@@ -132,13 +132,13 @@ public class TheLetterH extends JFrame {
     }
 
     public static float maxSortedPointGap(List<Vector2fc> points, Function<Vector2fc, Float> xyDimMapper) {
-        val xSortedPoints = points.stream()
+        val sortedPoints = points.stream()
                 .map(xyDimMapper)
                 .sorted()
                 .collect(Collectors.toList());
 
-        return IntStream.range(0, xSortedPoints.size() - 1)
-                .mapToObj(i -> xSortedPoints.get(i + 1) - xSortedPoints.get(i))
+        return IntStream.range(0, sortedPoints.size() - 1)
+                .mapToObj(i -> sortedPoints.get(i + 1) - sortedPoints.get(i))
                 .max(Float::compare)
                 .orElse(0F);
     }

@@ -19,21 +19,26 @@ public class PureAWTDrawThing extends BaseCanvasFrame {
 
     @Override
     protected void paintImpl() {
-        val font = AWTUtil.loadFont("helvetica.ttf", FONT_SIZE);
+        //val font = AWTUtil.loadFont("FiraCode-Regular.ttf", FONT_SIZE);
+        Font font = new Font("helvetica", Font.PLAIN, 12);
 
-        val chars = "Bababoey".toCharArray();
+        val chars = "*EQ    *eq".toCharArray();
         val withKerningAttrs = new HashMap<AttributedCharacterIterator.Attribute, Object>();
 
         withKerningAttrs.put(TextAttribute.FONT, font);
         withKerningAttrs.put(TextAttribute.KERNING, TextAttribute.KERNING_ON);
+//        withKerningAttrs.put(TextAttribute.STRIKETHROUGH, TextAttribute.STRIKETHROUGH_ON);
 
         val withKerningFont = Font.getFont(withKerningAttrs);
         val withKerningVector = withKerningFont.layoutGlyphVector(getFontRenderContext(withKerningFont), chars, 0, chars.length, Font.LAYOUT_LEFT_TO_RIGHT);
 
+        System.out.println(withKerningVector.getNumGlyphs());
 
-        System.out.println(withKerningVector.getGlyphOutline(0));
 
-        g.draw(withKerningVector.getOutline());
+        g.setFont(withKerningFont);
+        g.drawString("pogging",0,0);
+
+        //g.fill(withKerningVector.getOutline());
     }
 
     private static FontRenderContext getFontRenderContext(Font font) {

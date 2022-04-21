@@ -1,24 +1,21 @@
 package com.basdxz.vfont.data;
 
 import lombok.*;
-import org.joml.Vector2f;
-import org.joml.Vector2fc;
 
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Path2D;
-import java.awt.geom.PathIterator;
+import java.awt.geom.*;
 import java.util.*;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 @Getter
 public class Glyph {
     protected final int xGrids;
     protected final int yGrids;
-    protected final List<Set<Curve>> subGlyphs;
+    protected final List<Set<QuadCurve2D>> subGlyphs;
 
     // Check what intersects into each grid
     public Glyph(@NonNull Shape shape) {
@@ -29,38 +26,36 @@ public class Glyph {
         subGlyphs = newSubGlyphs(curves, xGrids, yGrids);
     }
 
+    //TODO: move into tests
     public static Path2D.Float testPath(@NonNull Shape shape) {
         val path = new Path2D.Float();
-        for (val curve : newCurveSet(shape)) {
-            path.moveTo(curve.start.x(), curve.start.y());
-            path.quadTo(curve.control.x(), curve.control.y(), curve.end.x(), curve.end.y());
-        }
+        newCurveSet(shape).forEach(curve -> path.append(curve, false));
         return path;
     }
 
     //TODO: Implement approximation of cubic curves
-    protected static Set<Curve> newCurveSet(@NonNull Shape shape) {
-        val curves = new HashSet<Curve>();
+    protected static Set<QuadCurve2D> newCurveSet(@NonNull Shape shape) {
+        val curves = new HashSet<QuadCurve2D>();
         val pathIterator = shape.getPathIterator(normalTransform(shape));
         val coords = new float[6];
-        Vector2fc last = new Vector2f();
-        Vector2fc control;
-        Vector2fc end;
+        Point2D last = new Point2D.Float();
+        Point2D control;
+        Point2D end;
         while (!pathIterator.isDone()) {
             val segmentType = pathIterator.currentSegment(coords);
             switch (segmentType) {
                 case PathIterator.SEG_MOVETO:
-                    last = new Vector2f(coords[0], coords[1]);
+                    last = new Point2D.Float(coords[0], coords[1]);
                     break;
                 case PathIterator.SEG_LINETO:
-                    end = new Vector2f(coords[0], coords[1]);
-                    curves.add(new Curve(last, end, end));
+                    end = new Point2D.Float(coords[0], coords[1]);
+                    curves.add(newCurve(last, end, end));
                     last = end;
                     break;
                 case PathIterator.SEG_QUADTO:
-                    control = new Vector2f(coords[0], coords[1]);
-                    end = new Vector2f(coords[2], coords[3]);
-                    curves.add(new Curve(last, control, end));
+                    control = new Point2D.Float(coords[0], coords[1]);
+                    end = new Point2D.Float(coords[2], coords[3]);
+                    curves.add(newCurve(last, control, end));
                     last = end;
                     break;
                 case PathIterator.SEG_CLOSE:
@@ -73,7 +68,7 @@ public class Glyph {
         return Collections.unmodifiableSet(curves);
     }
 
-    public static AffineTransform normalTransform(@NonNull Shape shape) {
+    protected static AffineTransform normalTransform(@NonNull Shape shape) {
         val bounds = shape.getBounds2D();
         val transform = new AffineTransform();
         transform.scale(1 / bounds.getWidth(), 1 / bounds.getHeight());
@@ -81,27 +76,33 @@ public class Glyph {
         return transform;
     }
 
-    protected static int xGrids(@NonNull Collection<Vector2fc> points) {
-        return grids(points, Vector2fc::x);
+    protected static QuadCurve2D newCurve(Point2D start, Point2D control, Point2D end) {
+        val curve = new QuadCurve2D.Float();
+        curve.setCurve(start, control, end);
+        return curve;
     }
 
-    protected static int yGrids(@NonNull Collection<Vector2fc> points) {
-        return grids(points, Vector2fc::y);
+    protected static int xGrids(@NonNull Collection<Point2D> points) {
+        return grids(points, Point2D::getX);
     }
 
-    protected static int grids(@NonNull Collection<Vector2fc> points,
-                               @NonNull Function<Vector2fc, Float> xyMapper) {
-        return Math.round(1F / maxSortedPointGap(points, xyMapper)) + 1;
+    protected static int yGrids(@NonNull Collection<Point2D> points) {
+        return grids(points, Point2D::getY);
     }
 
-    protected static Set<Vector2fc> curveToPoints(@NonNull Collection<Curve> curves) {
+    protected static int grids(@NonNull Collection<Point2D> points,
+                               @NonNull Function<Point2D, Double> xyMapper) {
+        return (int) (Math.round(1F / maxSortedPointGap(points, xyMapper)) + 1);
+    }
+
+    protected static Set<Point2D> curveToPoints(@NonNull Collection<QuadCurve2D> curves) {
         return curves.stream()
-                .flatMap((curve) -> curve.points().stream())
+                .flatMap((curve) -> Stream.of(curve.getP1(), curve.getCtrlPt(), curve.getP2()))
                 .collect(Collectors.toSet());
     }
 
-    protected static float maxSortedPointGap(@NonNull Collection<Vector2fc> points,
-                                             @NonNull Function<Vector2fc, Float> xyMapper) {
+    protected static double maxSortedPointGap(@NonNull Collection<Point2D> points,
+                                              @NonNull Function<Point2D, Double> xyMapper) {
         val sortedPoints = points.stream()
                 .map(xyMapper)
                 .sorted()
@@ -109,18 +110,18 @@ public class Glyph {
 
         return IntStream.range(0, sortedPoints.size() - 1)
                 .mapToObj(i -> sortedPoints.get(i + 1) - sortedPoints.get(i))
-                .max(Float::compare)
-                .orElse(1F);
+                .max(Double::compare)
+                .orElse(1D);
     }
 
-    protected static List<Set<Curve>> newSubGlyphs(Iterable<Curve> curves, int xGrids, int yGrids) {
+    protected static List<Set<QuadCurve2D>> newSubGlyphs(Iterable<QuadCurve2D> curves, int xGrids, int yGrids) {
         val xGridSize = 1F / xGrids;
         val yGridSize = 1F / yGrids;
-        val tempSubGlyphs = new ArrayList<Set<Curve>>();
+        val tempSubGlyphs = new ArrayList<Set<QuadCurve2D>>();
         tempSubGlyphs.ensureCapacity(xGrids * yGrids);
         for (var x = 0; x < yGrids; x++) {
             for (var y = 0; y < xGrids; y++) {
-                val subGlyph = new HashSet<Curve>();
+                val subGlyph = new HashSet<QuadCurve2D>();
                 for (val curve : curves) {
                     if (curve.intersects(x * xGridSize, y * yGridSize, xGridSize, yGridSize))
                         subGlyph.add(curve);

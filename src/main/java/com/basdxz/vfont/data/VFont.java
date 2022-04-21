@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class VFont {
-    // Performs a -1 scale on the Y to undo the scale intended for rendering to a Java window, Anti-Aliasing metric is practically ignored.
+    // Performs a -1 scale on the Y to undo the scale intended for rendering to a Java window, Anti-Aliasing metric is practically ignored. TODO: Verify orientation
     protected static final FontRenderContext frc = new FontRenderContext(AffineTransform.getScaleInstance(1D, -1D), false, false);
     protected static Method getGlyphOutlineMethodCached;
 
@@ -32,6 +32,7 @@ public class VFont {
         return getGlyphOutlineMethodCached;
     }
 
+    //TODO: Ensure font is point 1
     public VFont(@NonNull Font font) {
         this.font = font;
         val f2d = FontUtilities.getFont2D(font);

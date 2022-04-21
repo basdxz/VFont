@@ -1,8 +1,8 @@
 package com.basdxz.vfont;
 
 import com.basdxz.vfont.data.Glyph;
-import com.basdxz.vfont.data.VFont;
 import lombok.*;
+import org.joml.Vector2f;
 import sun.font.FontUtilities;
 
 import java.awt.*;
@@ -10,6 +10,7 @@ import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Path2D;
+import java.awt.geom.RectangularShape;
 import java.io.File;
 
 public class YeahButHowMany extends BaseCanvasFrame {
@@ -20,28 +21,33 @@ public class YeahButHowMany extends BaseCanvasFrame {
     @Override
     @SneakyThrows
     protected void paintImpl() {
-        val frc = new FontRenderContext(null, false, false);
-        val font = Font.createFont(Font.TRUETYPE_FONT, new File("FiraCode-Regular.ttf")).deriveFont(Font.PLAIN,128F);
+        drawXAxis(0);
+        drawYAxis(0);
+
+        val frc = new FontRenderContext(AffineTransform.getScaleInstance(1D, -1D), false, false);
+        val font = Font.createFont(Font.TRUETYPE_FONT, new File("FiraCode-Regular.ttf")).deriveFont(Font.PLAIN, 128F);
 
         val f2d = FontUtilities.getFont2D(font);
         val strike = f2d.getStrike(font, frc);
 
-        System.out.println(f2d.getNumGlyphs());
-        System.out.println(strike.getNumGlyphs());
-
-
         val method = strike.getClass().getDeclaredMethod("getGlyphOutline", int.class, float.class, float.class);
         method.setAccessible(true);
-        Path2D path = (Path2D)((GeneralPath)method.invoke(strike, f2d.charToGlyph('C'), 0, 0)).createTransformedShape(AffineTransform.getScaleInstance(1D, -1D));
-        path = (Path2D)path.createTransformedShape(AffineTransform.getTranslateInstance(50,0));
-
-        g.draw(Glyph.testPath(path));
+        val path = (Path2D) ((GeneralPath) method.invoke(strike, f2d.charToGlyph('M'), 0, 0));
 
 
-        long startTime = System.currentTimeMillis();
-        new VFont(font);
-        long endTime = System.currentTimeMillis();
 
-        System.out.println("VFont init took " + (endTime - startTime) + " ms");
+        val emActual = font.createGlyphVector(frc, "M");
+        g.draw(Glyph.testPath(path).createTransformedShape(invNormalTransform(emActual.getGlyphOutline(0))));
     }
+
+    public static AffineTransform invNormalTransform(@NonNull Shape shape) {
+        val bounds = shape.getBounds2D();
+        val transform = new AffineTransform();
+        transform.translate(bounds.getX(), 0);
+        transform.scale(bounds.getWidth(), bounds.getHeight());
+        System.out.println(bounds.getMaxY());
+
+        return transform;
+    }
+
 }

@@ -12,8 +12,7 @@ public abstract class BaseCanvasFrame extends JFrame {
     protected static final boolean CENTERED = true;
     //protected static final float SCALE = 0.1F;
     protected static final float SCALE = 1F;
-//    protected static final boolean FLIPPED_Y = true;
-    protected static final boolean FLIPPED_Y = false;
+    protected static final boolean FLIPPED_Y = true;
     protected static final int POINT_THICKNESS = 50;
 
     protected Graphics2D g;

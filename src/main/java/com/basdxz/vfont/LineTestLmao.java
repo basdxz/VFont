@@ -36,22 +36,12 @@ public class LineTestLmao extends JFrame {
         val g = prepareGraphics(gIn);
         drawAxisLines(g);
 
-        val p0 = new Point2D.Float(-100, -100); // Curve start
-        val p1 = new Point2D.Float(0, 200);     // Curve control point
-        val p2 = new Point2D.Float(100, -100);  // Curve end
+        val p0 = new Point2D.Float(70, 90); // Curve start
+        val p1 = new Point2D.Float(15, 50);     // Curve control point
+        val p2 = new Point2D.Float(80, 10);  // Curve end
         g.setColor(Color.RED);
         drawQuadBezier(g, p0, p1, p2);
         drawQuadBezierIntersections(g, p0, p1, p2);
-
-        val rotMat = new Matrix2f().rotation((float) Math.toRadians(45D));
-
-        val v0 = new Vector2f(p0.x, p0.y).mul(rotMat);
-        val v1 = new Vector2f(p1.x, p1.y).mul(rotMat);
-        val v2 = new Vector2f(p2.x, p2.y).mul(rotMat);
-
-        g.setColor(Color.GREEN);
-        drawQuadBezier(g, v0, v1, v2);
-        drawQuadBezierIntersections(g, v0, v1, v2);
 
         g.dispose();
     }

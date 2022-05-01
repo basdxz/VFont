@@ -15,11 +15,11 @@ import java.util.stream.Stream;
 public class Glyph {
     protected final int xGrids;
     protected final int yGrids;
+    protected final Set<QuadCurve2D> curves;
     protected final List<Set<QuadCurve2D>> subGlyphs;
 
-    // Check what intersects into each grid
     public Glyph(@NonNull Shape shape) {
-        val curves = newCurveSet(shape);
+        curves = newCurveSet(shape);
         val points = curveToPoints(curves);
         xGrids = xGrids(points);
         yGrids = yGrids(points);
@@ -71,7 +71,8 @@ public class Glyph {
     protected static AffineTransform normalTransform(@NonNull Shape shape) {
         val bounds = shape.getBounds2D();
         val transform = new AffineTransform();
-        transform.scale(1 / bounds.getWidth(), 1 / bounds.getHeight());
+        transform.translate(-1,-1);
+        transform.scale(2 / bounds.getWidth(), 2 / bounds.getHeight());
         transform.translate(-bounds.getX(), -bounds.getY());
         return transform;
     }
@@ -107,7 +108,6 @@ public class Glyph {
                 .map(xyMapper)
                 .sorted()
                 .collect(Collectors.toList());
-
         return IntStream.range(0, sortedPoints.size() - 1)
                 .mapToObj(i -> sortedPoints.get(i + 1) - sortedPoints.get(i))
                 .max(Double::compare)
@@ -117,8 +117,8 @@ public class Glyph {
     protected static List<Set<QuadCurve2D>> newSubGlyphs(Iterable<QuadCurve2D> curves, int xGrids, int yGrids) {
         val xGridSize = 1F / xGrids;
         val yGridSize = 1F / yGrids;
-        val tempSubGlyphs = new ArrayList<Set<QuadCurve2D>>();
-        tempSubGlyphs.ensureCapacity(xGrids * yGrids);
+        val subGlyphs = new ArrayList<Set<QuadCurve2D>>();
+        subGlyphs.ensureCapacity(xGrids * yGrids);
         for (var x = 0; x < yGrids; x++) {
             for (var y = 0; y < xGrids; y++) {
                 val subGlyph = new HashSet<QuadCurve2D>();
@@ -126,9 +126,9 @@ public class Glyph {
                     if (curve.intersects(x * xGridSize, y * yGridSize, xGridSize, yGridSize))
                         subGlyph.add(curve);
                 }
-                tempSubGlyphs.add(subGlyph);
+                subGlyphs.add(subGlyph);
             }
         }
-        return Collections.unmodifiableList(tempSubGlyphs);
+        return Collections.unmodifiableList(subGlyphs);
     }
 }

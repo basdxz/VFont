@@ -32,7 +32,6 @@ public class VFont {
         return getGlyphOutlineMethodCached;
     }
 
-    //TODO: Ensure font is point 1
     public VFont(@NonNull Font font) {
         this.font = font;
         val f2d = FontUtilities.getFont2D(font);

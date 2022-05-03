@@ -13,17 +13,34 @@ import java.util.stream.Stream;
 
 @Getter
 public class Glyph {
+    protected final Shape shape;
     protected final int xGrids;
     protected final int yGrids;
-    protected final Set<QuadCurve2D> curves;
-    protected final List<Set<QuadCurve2D>> subGlyphs;
+    protected final List<QuadCurve2D> curves;
+    protected final List<SubGlyph> subGlyphs;
 
-    public Glyph(@NonNull Shape shape) {
+    public Glyph(@NonNull Shape rawShape) {
+        shape = normalizeShape(rawShape);
         curves = newCurveSet(shape);
         val points = curveToPoints(curves);
         xGrids = xGrids(points);
         yGrids = yGrids(points);
-        subGlyphs = newSubGlyphs(curves, xGrids, yGrids);
+        //        xGrids = 100;
+        //        yGrids = 100;
+        subGlyphs = newSubGlyphs(shape, curves, xGrids, yGrids);
+    }
+
+    protected static Shape normalizeShape(@NonNull Shape shape) {
+        return normalTransform(shape).createTransformedShape(shape);
+    }
+
+    protected static AffineTransform normalTransform(@NonNull Shape shape) {
+        val bounds = shape.getBounds2D();
+        val transform = new AffineTransform();
+        transform.translate(-1, -1);
+        transform.scale(2 / bounds.getWidth(), 2 / bounds.getHeight());
+        transform.translate(-bounds.getX(), -bounds.getY());
+        return transform;
     }
 
     //TODO: move into tests
@@ -33,30 +50,40 @@ public class Glyph {
         return path;
     }
 
-    //TODO: Implement approximation of cubic curves
-    protected static Set<QuadCurve2D> newCurveSet(@NonNull Shape shape) {
-        val curves = new HashSet<QuadCurve2D>();
-        val pathIterator = shape.getPathIterator(normalTransform(shape));
+    protected static List<QuadCurve2D> newCurveSet(@NonNull Shape shape) {
+        val curves = new ArrayList<QuadCurve2D>();
+        val pathIterator = shape.getPathIterator(null);
         val coords = new float[6];
-        Point2D last = new Point2D.Float();
-        Point2D control;
-        Point2D end;
+        val start = new Point2D.Float();
+        val control = new Point2D.Float();
+        val control2 = new Point2D.Float();
+        val end = new Point2D.Float();
         while (!pathIterator.isDone()) {
             val segmentType = pathIterator.currentSegment(coords);
             switch (segmentType) {
                 case PathIterator.SEG_MOVETO:
-                    last = new Point2D.Float(coords[0], coords[1]);
+                    start.setLocation(coords[0], coords[1]);
                     break;
                 case PathIterator.SEG_LINETO:
-                    end = new Point2D.Float(coords[0], coords[1]);
-                    curves.add(newCurve(last, end, end));
-                    last = end;
+                    end.setLocation(coords[0], coords[1]);
+                    curves.add(newCurve(start, end, end));
+                    start.setLocation(end);
                     break;
                 case PathIterator.SEG_QUADTO:
-                    control = new Point2D.Float(coords[0], coords[1]);
-                    end = new Point2D.Float(coords[2], coords[3]);
-                    curves.add(newCurve(last, control, end));
-                    last = end;
+                    control.setLocation(coords[0], coords[1]);
+                    end.setLocation(coords[2], coords[3]);
+                    curves.add(newCurve(start, control, end));
+                    start.setLocation(end);
+                    break;
+                case PathIterator.SEG_CUBICTO:
+                    control.setLocation(coords[0], coords[1]);
+                    control2.setLocation(coords[2], coords[3]);
+                    end.setLocation(coords[4], coords[5]);
+                    control.setLocation(
+                            -0.25F * start.x + .75 * control.x + .75 * control2.x - 0.25 * end.x,
+                            -0.25F * start.y + .75 * control.y + .75 * control2.y - 0.25 * end.y);
+                    curves.add(newCurve(start, control, end));
+                    start.setLocation(end);
                     break;
                 case PathIterator.SEG_CLOSE:
                     break;
@@ -65,19 +92,10 @@ public class Glyph {
             }
             pathIterator.next();
         }
-        return Collections.unmodifiableSet(curves);
+        return Collections.unmodifiableList(curves);
     }
 
-    protected static AffineTransform normalTransform(@NonNull Shape shape) {
-        val bounds = shape.getBounds2D();
-        val transform = new AffineTransform();
-        transform.translate(-1,-1);
-        transform.scale(2 / bounds.getWidth(), 2 / bounds.getHeight());
-        transform.translate(-bounds.getX(), -bounds.getY());
-        return transform;
-    }
-
-    protected static QuadCurve2D newCurve(Point2D start, Point2D control, Point2D end) {
+    protected static QuadCurve2D newCurve(@NonNull Point2D start, @NonNull Point2D control, @NonNull Point2D end) {
         val curve = new QuadCurve2D.Float();
         curve.setCurve(start, control, end);
         return curve;
@@ -114,21 +132,28 @@ public class Glyph {
                 .orElse(1D);
     }
 
-    protected static List<Set<QuadCurve2D>> newSubGlyphs(Iterable<QuadCurve2D> curves, int xGrids, int yGrids) {
-        val xGridSize = 1F / xGrids;
-        val yGridSize = 1F / yGrids;
-        val subGlyphs = new ArrayList<Set<QuadCurve2D>>();
+    protected static List<SubGlyph> newSubGlyphs(@NonNull Shape shape, @NonNull List<QuadCurve2D> curves,
+                                                 int xGrids, int yGrids) {
+        val xSize = 2F / xGrids; // Width of a unit circle is 2F
+        val ySize = 2F / yGrids;
+        val subGlyphs = new ArrayList<SubGlyph>();
         subGlyphs.ensureCapacity(xGrids * yGrids);
-        for (var x = 0; x < yGrids; x++) {
-            for (var y = 0; y < xGrids; y++) {
-                val subGlyph = new HashSet<QuadCurve2D>();
-                for (val curve : curves) {
-                    if (curve.intersects(x * xGridSize, y * yGridSize, xGridSize, yGridSize))
-                        subGlyph.add(curve);
-                }
-                subGlyphs.add(subGlyph);
-            }
-        }
+        for (var y = 0; y < yGrids; y++)
+            for (var x = 0; x < xGrids; x++)
+                subGlyphs.add(newSubGlyph(shape, curves, (x * xSize) - 1F, (y * ySize) - 1F, xSize, ySize));
         return Collections.unmodifiableList(subGlyphs);
+    }
+
+    protected static SubGlyph newSubGlyph(@NonNull Shape shape, @NonNull List<QuadCurve2D> curves,
+                                          float xPos, float yPos, float xSize, float ySize) {
+        if (shape.intersects(xPos, yPos, xSize, ySize)) {
+            if (shape.contains(xPos, yPos, xSize, ySize))
+                return new SubGlyph(true);
+            return new SubGlyph(IntStream
+                    .range(0, curves.size())
+                    .filter(i -> curves.get(i).intersects(xPos, yPos, xSize, ySize))
+                    .toArray());
+        }
+        return new SubGlyph(false);
     }
 }
